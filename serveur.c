@@ -12,7 +12,7 @@
 #define MAXNAME 10
 #define MAXTEXT 100
 
-// next try
+// next try 2
 
 void print_msg(char *talker, char * chat) {
   fputs(talker, stdout);
