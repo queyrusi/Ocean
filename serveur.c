@@ -12,6 +12,8 @@
 #define MAXNAME 10
 #define MAXTEXT 100
 
+//try
+
 /**
  * fonction print_msg 
  * ------------------
