@@ -136,8 +136,31 @@ int main(int argc, char * argv[])
 		
 		do
 		{
-			c = EOF;
-			read(csocket, &c, 1);
+            c = EOF;
+            /* Le serveur lit la socket */
+            read(csocket, &c, 1);
+            /* il regarde si ce qui est écrit dans la socket est une commande
+            (d'où le "$" qui symbolise une commande) */
+            compare = (c == '$');  // $ est le caractere de commande
+            /* il s'agit d'une commande */
+            if (compare == 1)
+            {
+                printf("le serveur a entendu la requete du client \n");
+                /* on lit le caractère suivant pour déterminer la nature
+                de la requête */
+                read(csocket, &c, 1);
+                /* il s'agit d'un "p" : le client demande sa position */
+                if (c == 'p')
+                {
+                    /* on écrit la position dans la socket */
+                    write(csocket, position, strlen(position));
+                    /* on oublie pas de finir avec un caractère de
+                    fermeture de réponse pour que le client sache
+                    que la réponse est finie */
+                    write(csocket, envoi, strlen(envoi));
+                    print_msg(talker, position);          
+                }
+            } 
 			*chat = c;
 			chat++;
 			if (c == '\n' || c == EOF)
