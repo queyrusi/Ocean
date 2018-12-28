@@ -8,10 +8,10 @@
 #include <netdb.h>
 #include <stdlib.h>
 #include <string.h>
+#include <arpa/inet.h>
 
 #define MAXNAME 10
 #define MAXTEXT 100
-
 
 /**
  * fonction print_msg 
@@ -45,12 +45,9 @@ void read_header(int sock, char * username)
 
 int main(int argc, char * argv[])
 {
-
-	int pidFils;
 	int port = 6543;
 	char nom[30];
-	char commandeWrite[80];
-	socklen_t len_cadresse;//sizeof(struct sockaddr_in);
+	//char commandeWrite[80];
 	
 	/* déclaration socket et contexte d'adressage serveur */
 	int ssocket;
@@ -60,6 +57,9 @@ int main(int argc, char * argv[])
 	int csocket;
 	struct sockaddr_in cadresse;  
 	
+	/* variables d'Ocean : */
+	char *position = "192N_023E";
+	// char annuaire etc.
 	
 	/* s'il manque un argument */
 	if (argc!=2)
@@ -106,85 +106,79 @@ int main(int argc, char * argv[])
 		exit(1);
 	}
 
-	/* Création de la socket client comme acceptation de la socket serveur */
-	csocket = accept(ssocket, (struct sockaddr *)&cadresse, &len_cadresse);
+	/* Paramètres pour la conversation client-serveur */
+	socklen_t addr_size;
+	char buffer[1024];
+	pid_t childpid;
+	/* envoi est un symbole pour accuser récéption. Ça pourrait être autre
+	  chose évidemment... */
+	char* envoi = "\n";
 	
-	/**
-	 * -------------------------------------
-	 * La connection est maintenant établie.
-	 * -------------------------------------
-	 */
-	
-	/* On peut fermer la socket serveur puisqu'elle n'est plus utilisée ... */
-	close(ssocket);
-
-	char c;
-	char *talker = (char*)malloc(MAXNAME);
-	char *chat =  (char*)malloc(MAXTEXT);
-	char *begchat = chat;
-	
-	switch(pidFils=fork()) 
+	/* le while est la clée du multiplexage : il permet de créer autant de 
+	   sockets que de clients qui essayent de se connecter */
+	while(1)
 	{
-		case -1:
-		perror("fork");
-		exit(1);
-		
-		case 0:
-		/* Qui s'est connecté ? */
-		read_header(csocket, talker);
-		printf("%s is connected\n", talker);
-		
-		do
+		csocket = accept(ssocket, (struct sockaddr*)&cadresse, &addr_size);
+		if(csocket < 0)
 		{
-            c = EOF;
-            /* Le serveur lit la socket */
-            read(csocket, &c, 1);
-            /* il regarde si ce qui est écrit dans la socket est une commande
-            (d'où le "$" qui symbolise une commande) */
-            compare = (c == '$');  // $ est le caractere de commande
-            /* il s'agit d'une commande */
-            if (compare == 1)
-            {
-                printf("le serveur a entendu la requete du client \n");
-                /* on lit le caractère suivant pour déterminer la nature
-                de la requête */
-                read(csocket, &c, 1);
-                /* il s'agit d'un "p" : le client demande sa position */
-                if (c == 'p')
-                {
-                    /* on écrit la position dans la socket */
-                    write(csocket, position, strlen(position));
-                    /* on oublie pas de finir avec un caractère de
-                    fermeture de réponse pour que le client sache
-                    que la réponse est finie */
-                    write(csocket, envoi, strlen(envoi));
-                    print_msg(talker, position);          
-                }
-            } 
-			*chat = c;
-			chat++;
-			if (c == '\n' || c == EOF)
-			{
-				*chat = '\0';
-				chat = begchat;
-				print_msg(talker, chat);
-			}
-		}while (c!=EOF);
-		
-		fprintf(stderr,"Cote serveur: fin fils\n");
-		
-		break;
-		default:
-		do
-		{
-			c=getchar();
-			write(csocket, &c, 1);
+			exit(1);
 		}
-		while (c!=EOF);
+		printf("Connection accepted from %s:%d\n", inet_ntoa(cadresse.sin_addr),
+		 ntohs(cadresse.sin_port));
 
-		kill(pidFils, SIGTERM);
-		fprintf(stderr,"Cote serveur: fin pere\n");
+		/**
+		 * -------------------------------------
+		 * La connection est maintenant établie.
+		 * -------------------------------------
+		 */
+
+		if((childpid = fork()) == 0)
+		{
+			close(ssocket);
+
+			/* initialisation du buffer à zéro pour éviter les mauvaises 
+ 			   surprises... */
+			bzero(buffer, sizeof(buffer));
+
+			while(1)
+			{
+				recv(csocket, buffer, 1024, 0);
+
+				/* si le serveur reçoit la chaîne "$p" */
+				if ((strcmp(buffer, "$p") == 0) )
+				{
+					printf("Client %s:%d : *je viens de demander ma position*\n", inet_ntoa(cadresse.sin_addr),
+		 				   ntohs(cadresse.sin_port));
+					bzero(buffer, sizeof(buffer));
+					/* on copie la position dans le buffer et on l'envoit */
+					strncpy(buffer, position, 11);
+					send(csocket, buffer, strlen(buffer), 0);
+					bzero(buffer, sizeof(buffer));
+				}
+
+				/* si le serveur reçoit la chaîne "exit" */
+				if (strcmp(buffer, "exit") == 0)
+				{
+					printf("Disconnected from %s:%d\n", 
+						   inet_ntoa(cadresse.sin_addr), 
+						   ntohs(cadresse.sin_port));
+					fprintf(stderr,"Cote serveur: fin fils\n");
+					break;
+				}
+				else
+				{
+					printf("Client:%s:%d : %s\n", inet_ntoa(cadresse.sin_addr),
+		 				   ntohs(cadresse.sin_port), buffer);
+					bzero(buffer, sizeof(buffer));
+					/* on envoit un accusé de réception au client */
+					send(csocket, envoi, sizeof(envoi), 0);
+					
+				}
+
+			}
+		}
 	}
+
 	return 0;
 }
 
