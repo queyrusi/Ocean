@@ -47,7 +47,7 @@ void caracteriser_navire(Bateau * navire, char * buffer)
 
 					Arago240N_003Ene4&
 					^
-                 buffer[0]	 
+                                     buffer[0]	 
 		 */
 		if (isalpha(buffer[i])) 
 		{
