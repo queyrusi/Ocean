@@ -47,7 +47,7 @@ void caracteriser_navire(Bateau * navire, char * buffer)
 
 					Arago240N_003Ene4&
 					^
-				 buffer[0]	 
+                 buffer[0]	 
 		 */
 		if (isalpha(buffer[i])) 
 		{
@@ -73,9 +73,9 @@ void caracteriser_navire(Bateau * navire, char * buffer)
 	   On copie les trois digits dans un buffer temporaire y_buf :
 
 	  				240N_003E
-	  			    ^--      _______
-	  			      ╰---> | y_buf |
-							╰-------╯
+                    ^--      _______
+                      ╰---> | y_buf |
+                            ╰-------╯
 					
 	   */
 	strncpy(y_buf, &buffer[i], 3);  // N ~ Nord ~ y
@@ -90,9 +90,9 @@ void caracteriser_navire(Bateau * navire, char * buffer)
 	   avec x_buf :
 
 	  				240N_003E
-	  			         ^--      _______
-	  			           ╰---> | x_buf |
-							     ╰-------╯
+                         ^--      _______
+                           ╰---> | x_buf |
+                                 ╰-------╯
 
 	 */
 	
@@ -105,7 +105,7 @@ void caracteriser_navire(Bateau * navire, char * buffer)
 	/* La direction :
 
 					Arago240N_003Ene4&
-								  ^
+                                  ^
 	*/
 	
 	char dir_to_concatenate[] = {buffer[i], buffer[i+1], '\0'};
@@ -116,7 +116,7 @@ void caracteriser_navire(Bateau * navire, char * buffer)
 	   vitesse_buf jusqu'à rencontrer le terme spécial "&":
 
 					Arago240N_003Ene4&
-									^
+                                    ^
 	*/
 	
 	do
