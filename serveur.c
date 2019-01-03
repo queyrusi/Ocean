@@ -12,11 +12,15 @@
 #include <ctype.h>
 #include "structures.h"
 #include "fonctions_serveur.h"
+#include "serveur.h"
+#include "donnees.h"
 
-#define MAXNAME 10
-#define MAXTEXT 100
 
 
+
+// Global variables
+ClientList *root;
+ClientList *now;
 /**
  * fonction print_msg 
  * ------------------
@@ -28,6 +32,39 @@ void print_msg(char *talker, char * chat)
 	fputs(": ", stdout);
 	fputs(chat, stdout);
 	fflush(stdout);
+}
+
+/**
+ * fonction send_to_all_clients
+ * ------------------
+ * 
+ */
+void send_to_all_clients(ClientList *np, char tmp_buffer[]) {// Permet d'envoyer un message à tous les clients d'un coup
+    ClientList *tmp = root->link;
+    while (tmp != NULL) {// Tant qu'il reste des liens à explorer
+        if (np->data != tmp->data) { // On envoi à tous les clients sauf à lui-meme
+            printf("Envoyer a la socket %d: \"%s\" \n", tmp->data, tmp_buffer);
+            send(tmp->data, tmp_buffer, LENGTH_SEND, 0);
+        }
+        tmp = tmp->link;
+    }
+}
+/**
+ * fonction quitter_sock
+ * ------------------
+ * 
+ */
+
+void quitter_sock(int sig) {// On cherche ici a fermer toutes les sockets lorsqu'on va shutdown le systeme
+    ClientList *tmp;
+    while (root != NULL) {// Tant qu'on a pas fermer la racine on continue
+        close(root->data); // On ferme la socket sur laquelle on se situe puis on remonte les liens
+        tmp = root;
+        root = root->link;
+        free(tmp);
+    }
+    printf("Au revoir\n");// On a tout fermer, meme le serveur lui meme
+    exit(EXIT_SUCCESS);
 }
 
 /**
@@ -49,16 +86,23 @@ void read_header(int sock, char * username)
 
 int main(int argc, char * argv[])
 {
-	int port = 6543;
+	signal(SIGINT, quitter_sock); // permet d'interrompre la communication via le clavier et la fct quitter_sock
+
+	int port = 8888;
 	char nom[30];
 	
-	/* déclaration socket et contexte d'adressage serveur */
+	/* Paramétrage du contexte d'adressage serveur et client*/
+	/* Socket information */
 	int ssocket;
-	struct sockaddr_in adr;
-	
-	/* déclaration socket et contexte d'adressage client */
 	int csocket;
-	struct sockaddr_in cadresse;  
+    struct sockaddr_in serveur_info, client_info;
+    int s_addrlen = sizeof(serveur_info);
+    int c_addrlen = sizeof(client_info);
+    memset(&serveur_info, 0, s_addrlen);
+    memset(&client_info, 0, c_addrlen);
+	serveur_info.sin_family=AF_INET;
+	serveur_info.sin_port=htons(port);
+	serveur_info.sin_addr.s_addr = htonl(INADDR_ANY);
 	
 	/* variables d'Ocean : */
 	char *position = "192N_023E";  // obsolète
@@ -91,20 +135,15 @@ int main(int argc, char * argv[])
 
 	/* affichage d'un identifiant et du nom de la machine sur laquelle le 
 	   serveur est lancé */
-	printf("User: %s - %d; Machine: %s\n", getlogin(), geteuid(), nom);
+	printf("Machine: %s\n", nom);
 
-	/* Paramétrage du contexte d'adressage serveur */
-	adr.sin_family=AF_INET;
-	adr.sin_port=htons(port);
-	adr.sin_addr.s_addr = htonl(INADDR_ANY);
 
 	/* si la socket ne se bind pas avec son contexte d'adressage */
-	if (bind(ssocket, (struct sockaddr *) &adr, sizeof(adr))==-1)
+	if (bind(ssocket, (struct sockaddr *) &serveur_info, sizeof(serveur_info))==-1)
 	{
 		perror("bind");
 		exit(1);
 	}
-
 	/* si la socket ne rentre pas en mode listen */
 	if (listen(ssocket,3)==-1)
 	{
@@ -126,19 +165,33 @@ int main(int argc, char * argv[])
 	/* envoi est un symbole pour accuser récéption. Ça pourrait être autre
 	   chose évidemment... */
 	char* envoi = "\n";
-	
+	// Affichage de l'adresse IP du serveur
+    getsockname(ssocket, (struct sockaddr*) &serveur_info, (socklen_t*) &s_addrlen);
+    printf("Demarrage serveur sur: %s:%d\n", inet_ntoa(serveur_info.sin_addr), ntohs(serveur_info.sin_port));
+
+    // On initialise un nouveau noeud pour les potentiels clients
+    root = newNode(ssocket, inet_ntoa(serveur_info.sin_addr));
+    now = root;
 	/* le while est la clée du multiplexage : il permet de créer autant de 
 	   sockets que de clients qui essayent de se connecter */
 	while(1)
 	{
-		csocket = accept(ssocket, (struct sockaddr*)&cadresse, &addr_size);
+
+		csocket = accept(ssocket, (struct sockaddr*) &client_info, (socklen_t*) &c_addrlen);
 		if(csocket < 0)
 		{
 			exit(1);
 		}
-		printf("Connection accepted from %s:%d\n", inet_ntoa(cadresse.sin_addr),
-		 ntohs(cadresse.sin_port));
 
+		// Affiche l'adresse IP du client
+        getpeername(csocket, (struct sockaddr*) &client_info, (socklen_t*) &c_addrlen);
+        printf("Le client d'adresse %s:%d est entré\n", inet_ntoa(client_info.sin_addr), ntohs(client_info.sin_port));
+
+        // On ajoute le nouveau client à la liste des clients
+        ClientList *c = newNode(csocket, inet_ntoa(client_info.sin_addr));
+        c->prev = now;
+        now->link = c;
+        now = c;
 		/**
 		 * -------------------------------------
 		 * La connection est maintenant établie.
@@ -178,7 +231,7 @@ int main(int argc, char * argv[])
 		 *
 		 */
 		recv(csocket, buffer, 1024, 0);
-		printf("Buffer initial reçu : %s\n", buffer);
+		printf("Cette connexion est lié au code bateau suivant : %s\n", buffer);
 
 		caracteriser_navire(navire1, buffer);
 
@@ -205,39 +258,41 @@ int main(int argc, char * argv[])
 			{
 				recv(csocket, buffer, 1024, 0);
 
-				/* si le serveur reçoit la chaîne "$p" */
+				/* si le serveur reçoit la chaîne "$p", on renvoit la position du bateau correspondant*/
 				if ((strcmp(buffer, "$p") == 0) )
 				{
-					printf("Client %s:%d : *je viens de demander ma position*\n", inet_ntoa(cadresse.sin_addr),
-		 				   ntohs(cadresse.sin_port));
+					printf("Client %s:%d : *je viens de demander ma position*\n", inet_ntoa(client_info.sin_addr),
+		 				   ntohs(client_info.sin_port));
 					bzero(buffer, sizeof(buffer));
 					/* on copie la position dans le buffer et on l'envoit */
 					strncpy(buffer, position, 11);
 					send(csocket, buffer, strlen(buffer), 0);
 					bzero(buffer, sizeof(buffer));
 				}
-
 				/* si le serveur reçoit la chaîne "exit" */
 				if (strcmp(buffer, "exit") == 0)
 				{
 					printf("Disconnected from %s:%d\n", 
-						   inet_ntoa(cadresse.sin_addr), 
-						   ntohs(cadresse.sin_port));
+						   inet_ntoa(client_info.sin_addr), 
+						   ntohs(client_info.sin_port));
 					fprintf(stderr,"Cote serveur: fin fils\n");
 					break;
 				}
 				else
 				{
-					printf("Client:%s:%d : %s\n", inet_ntoa(cadresse.sin_addr),
-		 				   ntohs(cadresse.sin_port), buffer);
+					printf("Client:%s:%d : %s\n", inet_ntoa(client_info.sin_addr),
+		 				   ntohs(client_info.sin_port), buffer);
 					bzero(buffer, sizeof(buffer));
 					/* on envoit un accusé de réception au client */
 					send(csocket, envoi, sizeof(envoi), 0);
 					
 				}
-			}
+				if (strcmp(buffer, "exit") == 0) {
+	            printf("Fail to create a socket.");
+	        	exit(EXIT_FAILURE);
+	        	}
+        	}
 		}
 	}
-
 	return 0;
 }
