@@ -130,6 +130,89 @@ void caracteriser_navire(Bateau * navire, char * buffer)
 	
 }
 
+/**
+ * fonction est_bateau
+ * ====================
+ *
+ * premet de verifier qu'on a bien un code bateau
+ *
+ * Paramètres
+ * ----------
+ * char message_entrant_buffer : le message qu'envoie le client
+ */
+
+int est_bateau (char* message_entrant_buffer){
+    char pos_x = message_entrant_buffer[8];
+    char pos_y = message_entrant_buffer[13];
+    char tiret = message_entrant_buffer[9];
+    char direction = message_entrant_buffer[14];
+    char fin = message_entrant_buffer[17];
+    int control = 1;
+    for (int i = 0; i < 5; i++)
+    {
+        if (isdigit((char) message_entrant_buffer[i]) != 0 ) { // si on a un chiffre, erreur
+            control = 0;
+        }       
+    }
+    for (int i = 5; i < 8; i++)
+    {
+        if (isdigit(message_entrant_buffer[i]) == 0 ) { // si on a un caractère, erreur
+            control = 0;
+        }   
+    }
+    if (strcmp(&pos_x, "N") == 0){
+        control =0;
+        } 
+
+    if (strcmp(&tiret, "_") == 0){
+        control =0;
+        }
+    for (int i = 10; i < 13; i++)
+    {
+        if (isdigit(message_entrant_buffer[i]) == 0 ) { // si on a un caractère, erreur
+            control = 0;
+        }   
+    }
+    if (strcmp(&pos_y, "E") == 0){
+        control =0;
+        } 
+    if (strcmp(&direction, "n") == 0 || strcmp(&direction, "s") == 0 || strcmp(&direction, "e") == 0 || strcmp(&direction, "o") == 0){
+        control =0;
+        }
+    for (int i = 15; i < 17; i++)
+    {
+        if (isdigit(message_entrant_buffer[i]) == 0 ) { // si on a un caractère, erreur
+            control = 0;
+        }   
+    }
+    if (strcmp(&fin, "&") == 0){
+        control =0;
+        }
+	return control;
+}
+
+/**
+ * fonction est_bateau
+ * ====================
+ *
+ * premet de verifier qu'on a bien un code bateau
+ *
+ * Paramètres
+ * ----------
+ * char message_entrant_buffer : le message qu'envoie le client
+ */
+
+char* nom_bateau (char* message_entrant_buffer){
+    char * nom_bat;
+    nom_bat = malloc(sizeof(char)*100);
+    
+    nom_bat[0] = message_entrant_buffer[0];
+    nom_bat[1] = message_entrant_buffer[1];
+    nom_bat[2] = message_entrant_buffer[2];
+    nom_bat[3] = message_entrant_buffer[3];
+    nom_bat[4] = message_entrant_buffer[4];
+	return nom_bat;
+}
 
 /**
  * fonction inscrire_navire
