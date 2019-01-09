@@ -26,109 +26,7 @@
  * 				     informations nécessaires pour combler les vides de la 
  *					 structure navire.
  */
-void caracteriser_navire(Bateau * navire, char * buffer)
-{
-	int i;
-	char x_buf[3];
-	char y_buf[3];
-	bzero(y_buf, sizeof(y_buf));
-	char vitesse_buf[3];
-	bzero(vitesse_buf, sizeof(vitesse_buf));
-	char* symbole_fin_buffer = "&";
-
-	/* Pour inscrire le nom dans la variable navire, on lit chacune 
-	   des premières lettres du buffer au plus 30 fois, puisque 30 
-	   est la taille maximale d'un nom tel que défini dans 
-	   structures.h ... */
-	for (i=0;i<30;i++)
-	{
-		/* ...puis on les place dans la structure si ce sont
-		   bien des lettres ...
-
-					Arago240N_003Ene4&
-					^
-                                     buffer[0]	 
-		 */
-		if (isalpha(buffer[i])) 
-		{
-	    	char to_concatenate[] = {buffer[i], '\0'};
-	    	strcat(navire->nom, to_concatenate);
-		}
-		/* ...et on arrête dès qu'on tombe sur un chiffre (le début
-		   de la position) :
-				
-					Arago240N_003Ene4&
-					     ^
-					  buffer[5]
-		 */
-		else
-		{
-			break;
-		}
-	}
-	/* La taille d'une position est fixe de la forme :
-
-	   				240N_003E
-
-	   On copie les trois digits dans un buffer temporaire y_buf :
-
-	  				240N_003E
-                                        ^--      _______
-                                          ╰---> | y_buf |
-                                                ╰-------╯
-					
-	   */
-	strncpy(y_buf, &buffer[i], 3);  // N ~ Nord ~ y
-
-	/* on convertit ce buffer en entier et on le met dans la 
-	   structure */
-	navire->y = atoi(y_buf);
-
-	i += 5;
-	
-	/* on avance jusqu'au trois digits suivants et on fait la même
-	   avec x_buf :
-
-	  				240N_003E
-                                             ^--      _______
-                                               ╰---> | x_buf |
-                                                     ╰-------╯
-
-	 */
-	
-	strncpy(x_buf, &buffer[i], 3);  // E ~ East ~ x
-	/* on convertit ce buffer en entier et on le met dans la 
-	   structure */
-	navire->x = atoi(x_buf);
-	i += 4;
-
-	/* La direction :
-
-					Arago240N_003Ene4&
-                                                      ^
-	*/
-	
-	char dir_to_concatenate[] = {buffer[i], buffer[i+1], '\0'};
-	strcat(navire->direction, dir_to_concatenate);
-	i += 2; 
-
-	/* Pour la vitesse, on copie les digits dans le buffer temporaire 
-	   vitesse_buf jusqu'à rencontrer le terme spécial "&":
-
-					Arago240N_003Ene4&
-                                                        ^
-	*/
-	
-	do
-	{
-		strncat(vitesse_buf, &buffer[i], 1);
-		i += 1;
-	}while(strcmp(&buffer[i], symbole_fin_buffer) != 0);
-	
-	navire->vitesse_int = atoi(vitesse_buf);
-
-	
-}
+void caracteriser_navire(Bateau * navire, char * buffer);
 
 /**
  * fonction est_bateau
@@ -141,55 +39,7 @@ void caracteriser_navire(Bateau * navire, char * buffer)
  * char message_entrant_buffer : le message qu'envoie le client
  */
 
-int est_bateau (char* message_entrant_buffer){
-    char pos_x = message_entrant_buffer[8];
-    char pos_y = message_entrant_buffer[13];
-    char tiret = message_entrant_buffer[9];
-    char direction = message_entrant_buffer[14];
-    char fin = message_entrant_buffer[17];
-    int control = 1;
-    for (int i = 0; i < 5; i++)
-    {
-        if (isdigit((char) message_entrant_buffer[i]) != 0 ) { // si on a un chiffre, erreur
-            control = 0;
-        }       
-    }
-    for (int i = 5; i < 8; i++)
-    {
-        if (isdigit(message_entrant_buffer[i]) == 0 ) { // si on a un caractère, erreur
-            control = 0;
-        }   
-    }
-    if (strcmp(&pos_x, "N") == 0){
-        control =0;
-        } 
-
-    if (strcmp(&tiret, "_") == 0){
-        control =0;
-        }
-    for (int i = 10; i < 13; i++)
-    {
-        if (isdigit(message_entrant_buffer[i]) == 0 ) { // si on a un caractère, erreur
-            control = 0;
-        }   
-    }
-    if (strcmp(&pos_y, "E") == 0){
-        control =0;
-        } 
-    if (strcmp(&direction, "n") == 0 || strcmp(&direction, "s") == 0 || strcmp(&direction, "e") == 0 || strcmp(&direction, "o") == 0){
-        control =0;
-        }
-    for (int i = 15; i < 17; i++)
-    {
-        if (isdigit(message_entrant_buffer[i]) == 0 ) { // si on a un caractère, erreur
-            control = 0;
-        }   
-    }
-    if (strcmp(&fin, "&") == 0){
-        control =0;
-        }
-	return control;
-}
+int est_bateau (char* message_entrant_buffer);
 
 /**
  * fonction est_bateau
@@ -202,17 +52,7 @@ int est_bateau (char* message_entrant_buffer){
  * char message_entrant_buffer : le message qu'envoie le client
  */
 
-char* nom_bateau (char* message_entrant_buffer){
-    char * nom_bat;
-    nom_bat = malloc(sizeof(char)*100);
-    
-    nom_bat[0] = message_entrant_buffer[0];
-    nom_bat[1] = message_entrant_buffer[1];
-    nom_bat[2] = message_entrant_buffer[2];
-    nom_bat[3] = message_entrant_buffer[3];
-    nom_bat[4] = message_entrant_buffer[4];
-	return nom_bat;
-}
+char* nom_bateau (char* message_entrant_buffer);
 
 /**
  * fonction inscrire_navire
@@ -226,10 +66,7 @@ char* nom_bateau (char* message_entrant_buffer){
  * Annuaire * mon_annuaire   : pointeur vers l'annuaire
  * 
  */
-void inscrire_navire(Bateau * navire, Annuaire * mon_annuaire)
-{
-	mon_annuaire->navire1 = *navire;
-}
+void inscrire_navire(Bateau * navire, Annuaire * mon_annuaire);
 
 
 /**
@@ -239,20 +76,7 @@ void inscrire_navire(Bateau * navire, Annuaire * mon_annuaire)
  * affiche les caractéristiques d'un navire.
  * 
  */
-void affiche_navire(Bateau navire)
-{
-		printf("nom du navire ................................ %s\n", 
-			navire.nom);
-		printf("identifiant .................................. %d\n", 
-			navire.identifiant);
-		printf("direction .................................... %s\n", 
-			navire.direction);
-		printf("vitesse ...................................... %d\n", 
-			navire.vitesse_int);
-		printf("coordonnée Y (Nord) .......................... %d\n", navire.y);
-		printf("coordonnée X (Est) ........................... %d\n", navire.x);
-}
-
+void affiche_navire(Bateau navire);
 /**
  * fonction affiche_annuaire
  * =========================
@@ -261,31 +85,7 @@ void affiche_navire(Bateau navire)
  * les navires actuellement en mer.
  * 
  */
-void affiche_annuaire(Annuaire annuaire)
-{
-	int n_navires = 0;
+void affiche_annuaire(Annuaire annuaire);
 
-	printf("VOICI LES NAVIRES CONTENUS DANS L'ANNUAIRE :\n");
-	printf("---------------------------------------------------------\n");
-
-	if (atoi(&annuaire.identifiants_pris[0]))
-	{
-		n_navires ++;
-		affiche_navire(annuaire.navire1);
-	}
-	if (atoi(&annuaire.identifiants_pris[1]))
-	{
-		n_navires ++;
-		printf("\n\n");
-		affiche_navire(annuaire.navire2);
-	}
-	if (atoi(&annuaire.identifiants_pris[2]))
-	{
-		n_navires ++;
-		printf("\n\n");
-		affiche_navire(annuaire.navire3);
-	}
-
-    printf("---------------------------------------------------------\n");
-	printf("TOTAL : %d\n", n_navires);
-}
+char* init_position (char* message_entrant_buffer);
+char* init_direction (char* message_entrant_buffer);
