@@ -9,7 +9,7 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include "structures.h"
-#include "fonctions_serveur.h"
+#include "fonctions_serveur.c"
 #include "serveur.h"
 #include "donnees.h"
 
@@ -93,6 +93,10 @@ void modif_vent(){
 	}
 }
 
+
+
+
+
 /**
  * fonction client_handler pour gerer l'ensemble des connections qui rentrent dans le système
  * 
@@ -105,7 +109,8 @@ void client_handler(void *p_client) { //gestionnaire de client, permet au serveu
     char send_buffer[LENGTH_SEND] = {};
     ClientList *Client_courant = (ClientList *)p_client;
 
-    char *position = "192N_023E";  // obsolète, il faut gerer ça dans la stucture client
+    char position[10] = {};  // obsolète, il faut gerer ça dans la stucture client
+    char direction[3] = {};
 
     // Nomage des clients qui rentrent pour les iidentifier dans le serveur
     
@@ -114,10 +119,16 @@ void client_handler(void *p_client) { //gestionnaire de client, permet au serveu
         control_false = 1;
     } else {
     	char * nom_bat = nom_bateau(code_bateau_entrant);
+    	char * position = init_position(code_bateau_entrant);
+    	char * direction = init_direction(code_bateau_entrant);
+    	strncpy(Client_courant->position, position, 10);
+    	strncpy(Client_courant->direction, direction, 10);
         strncpy(Client_courant->name, nom_bat, LENGTH_NAME); // On copie le nom que le client a rentre dans une chaine de char usable
         free(nom_bat);
-        printf("Le bateau %s(%s)(%d) a rejoint l'ocean'.\n", Client_courant->name, Client_courant->ip, Client_courant->data);
-        sprintf(send_buffer, "Le bateau%s(%s) a rejoint l'ocean", Client_courant->name, Client_courant->ip);// On met dans le buffer et on envoi a tout le monde que le nouveau bateau a rejoint l'ocean
+        free(position);
+        free(direction);
+        printf("Le bateau %s(%s)(%d) a rejoint l'ocean à la position %s en direction %s.\n", Client_courant->name, Client_courant->ip, Client_courant->data, Client_courant->position,Client_courant->direction);
+        sprintf(send_buffer, "Le bateau%s(%s) a rejoint l'ocean à la position %s en direction %s", Client_courant->name, Client_courant->ip, Client_courant->position, Client_courant->direction);// On met dans le buffer et on envoi a tout le monde que le nouveau bateau a rejoint l'ocean
         send_to_all_clients(Client_courant, send_buffer); // on envoi à tout le monde que un client vient de rejoindre la salle
     }
 
@@ -127,18 +138,17 @@ void client_handler(void *p_client) { //gestionnaire de client, permet au serveu
             break;
         }
     	
-        	
         
         int receive = recv(Client_courant->data, recv_buffer, LENGTH_MSG, 0);
         if (receive > 0) {
 	    if (strcmp(recv_buffer, "P") == 0 ){
 	    	printf(" Le bateau %s(%s)(%d) a demandé sa position'.\n", Client_courant->name, Client_courant->ip, Client_courant->data);
 			/* on copie la position dans le buffer et on l'envoit */
-			sprintf(send_buffer, "%s, vous êtes à la position %s", Client_courant->name, position);
+			sprintf(send_buffer, "%s, vous êtes à la position %s", Client_courant->name, Client_courant->position);
 			//strncpy(buffer, position, 11);
 			send(Client_courant->data, send_buffer, strlen(send_buffer), 0);
 	    	/* on copie la position dans le buffer et on l'envoit */
-	    	sprintf(send_buffer, "%s(%s) est à la position %s", Client_courant->name, Client_courant->ip, position);
+	    	sprintf(send_buffer, "%s(%s) est à la position %s", Client_courant->name, Client_courant->ip, Client_courant->position);
             }
         else if (strlen(recv_buffer) == 0) {
                 continue;
@@ -146,8 +156,8 @@ void client_handler(void *p_client) { //gestionnaire de client, permet au serveu
             sprintf(send_buffer, "%s：%s from %s", Client_courant->name, recv_buffer, Client_courant->ip);
 
         } else if (receive == 0 || strcmp(recv_buffer, "exit") == 0) {
-            printf("%s(%s)(%d) part du chat\n", Client_courant->name, Client_courant->ip, Client_courant->data);
-            sprintf(send_buffer, "%s(%s) part du chat", Client_courant->name, Client_courant->ip);
+            printf("%s(%s)(%d) a quitté l'océan\n", Client_courant->name, Client_courant->ip, Client_courant->data);
+            sprintf(send_buffer, "%s(%s) quitte l'océan", Client_courant->name, Client_courant->ip);
             control_false = 1;
 
 	} else {
@@ -172,7 +182,7 @@ void client_handler(void *p_client) { //gestionnaire de client, permet au serveu
 int main(int argc, char * argv[])
 {
     signal(SIGINT, quitter_sock); // permet d'interrompre la communication via le clavier et la fct quitter_sock
-    int port = 8881;
+    int port;
 	char nom[30];
     // Creation de la socket
     ssocket = socket(AF_INET , SOCK_STREAM , 0);
@@ -183,6 +193,7 @@ int main(int argc, char * argv[])
 	
 	/* Paramétrage du contexte d'adressage serveur et client*/
 	/* Socket information */
+	port = atoi(argv[1]);
     struct sockaddr_in serveur_info, client_info;
     int s_addrlen = sizeof(serveur_info);
     int c_addrlen = sizeof(client_info);
@@ -193,7 +204,6 @@ int main(int argc, char * argv[])
 	serveur_info.sin_addr.s_addr = htonl(INADDR_ANY);
 
    /* variables d'Ocean : */
-	char *position = "192N_023E";  // obsolète
 	Annuaire mon_annuaire;
 	/* initialisation des identifiants libres de l'annuaire */
 	strcpy(mon_annuaire.identifiants_pris, "000");
@@ -205,7 +215,6 @@ int main(int argc, char * argv[])
 		exit(1);
 	}
 
-	port = atoi(argv[1]);
 
 	/* si la socket ne se crée pas */
 	if ((ssocket=socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -224,6 +233,7 @@ int main(int argc, char * argv[])
 	/* affichage d'un identifiant et du nom de la machine sur laquelle le 
 	   serveur est lancé */
 	printf("Machine: %s\n", nom);
+	printf("-------------------------\n");
 	/* si la socket ne se bind pas avec son contexte d'adressage */
 	if (bind(ssocket, (struct sockaddr *) &serveur_info, sizeof(serveur_info))==-1)
 	{
@@ -272,24 +282,26 @@ int main(int argc, char * argv[])
 
 		/* on attribue un identifiant 1, 2 ou 3 au nouveau navire selon que cet 
 		   identifiant est libre ou non (vaut 0 ou non) */
-		if (navire1->identifiant == 0)
-		{
-			navire1->identifiant = 1;
-			navire_courant = 1;
-			mon_annuaire.identifiants_pris[0] = '1';
-		}
-		else if (navire2->identifiant == 0)
-		{
-			navire2->identifiant = 2;
-			navire_courant = 2;
-			mon_annuaire.identifiants_pris[1] = '2';
-		}
-		else 
-		{
-			navire3->identifiant = 3;
-			navire_courant = 3;
-			mon_annuaire.identifiants_pris[2] = '3';
-		}
+
+		//if (navire1->identifiant == 0)
+		//{
+		//	navire1->identifiant = 1;
+		//	navire_courant = 1;
+		//	mon_annuaire.identifiants_pris[0] = '1';
+		//}
+		//else if (navire2->identifiant == 0)
+		//{
+		//	navire2->identifiant = 2;
+		//	navire_courant = 2;
+		//	mon_annuaire.identifiants_pris[1] = '2';
+		//}
+		//else 
+		//{
+		//	navire3->identifiant = 3;
+		//	navire_courant = 3;
+		//	mon_annuaire.identifiants_pris[2] = '3';
+		//}
+
 		/* NOTE : l'attribution d;un identifiant devra faire l'objet d'une 
 		   fonction */
 

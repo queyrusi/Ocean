@@ -11,7 +11,7 @@ typedef struct ClientNode { // structure du client
     struct ClientNode* link;
     char ip[16];
     char name[31];
-
+    char position[10];
     /* A ajouter au fur et a mesure pour les bateaux*/
 
     //int identifiant;
@@ -21,7 +21,7 @@ typedef struct ClientNode { // structure du client
     /* ajout de la même vitesse en int pour les "vraies" 
     manipulations */
     //int vitesse_int;
-    //char direction[3];
+    char direction[3];
     //char position[10];
     //int x;
     //int y;
@@ -36,6 +36,7 @@ ClientList *newNode(int sockfd, char* ip) { //creation d'un espace pour un poten
     strncpy(np->name, "NULL", 5);
     return np;
 }
+
 
 char * substr(char *chaineSource,int pos,int len) { 
   // Retourne la sous-chaine de la chaine chaineSource 
