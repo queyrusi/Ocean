@@ -226,68 +226,47 @@ void client_handler(void *p_client)
  *
  * Paramètre:
  * ----------
- * Client_node * client : client dont on veut obtenir le code navire
+ * ClientList * client : client dont on veut obtenir le code navire
  *
  * Retourne:
  * ---------
  * char * code_client : code client (sans le nom) de la forme 231N_003En21
  *
  */
-char * client2code(Client_node * client)
+char * client2code(ClientList * courant)
 {
-	char[13] = code_client;
+	char code_client[13];
 	int now_x = courant->x;
 	int now_y = courant->y;
 	int now_v = courant->vitesse;
 	char direction = courant->direction;
+	char now_y_str[4];
+	char now_x_str[4];
+	char now_v_str[3];
 
-	if (now_y > 99)
-	{
-		char now_y_str[4];
-	}
-	else
-	{
-		char now_y_str[3];
-	}
-	if (now_x > 99)
-	{
-		char now_x_str[4];
-	}
-	else
-	{
-		char now_x_str[3];
-	}	
-
+	bzero(now_y_str);
 	sprintf(now_y_str, "%d", now_x);
 	strncpy(code_client, now_y_str, sizeof(now_y_str));
-	bzero(now_y_str);
+	
 	strcat(code_client, "N_");
 
+	bzero(now_x_str);
 	sprintf(now_x_str, "%d", now_x);
 	strcat(code_client, now_x_str);
-	bzero(now_x_str);
 	strcat(code_client, 'E');
 
 	strcat(code_client, direction);
 
-	if (now_v > 9)
-	{
 		if (now_v > 99)
 		{
 			perror("client_2_code lit une vitesse à trois chiffres");
 			exit(EXIT_FAILURE);
 
 		}
-		char now_v_str[3];
-	}
-	else
-	{
-		char now_v_str[2];
-	}
 
+	bzero(now_v_str);
 	sprintf(now_v_str, "%d", now_v);
 	strcat(code_client, now_v_str);
-	bzero(now_v_str);
 
 	return code_client;
 }
@@ -306,49 +285,49 @@ void transmettre_map()
 {
 	int k;
 	char[40] buffer_transmis;
-	char * commande_map = "$p";
+	char * commande_map = "$m";
 	strncpy(buffer_transmis, commande_map, 2);
 	char[13] code_bateau;
 
-	/* il n'y a aucun client dans l'océan */
+	// il n'y a aucun client dans l'océan 
 	if (ClientList == NULL)
 	{
 		perror("aucune liste client\n");
         exit(EXIT_FAILURE);
 	}
 
-	courant = now;  // utile ?
+	ClientList courant;
+	courant = now;
 
-	/* tant que la pile n'est pas vide */
+	// tant que la pile n'est pas vide 
 	do
 	{
 		bzero(code_bateau, sizeof(code_bateau));
 		code_bateau = client2code(courant);
 		strcat(buffer_transmis, code_bateau);
 
-		/* il reste des navires dans l'océan */
+		// il reste des navires dans l'océan 
 		if (now->prev != NULL)
 		{
-			/* les codes navire sont séparés par une virgule */
+			// les codes navire sont séparés par une virgule 
 			strcat(buffer_transmis, ',');
 			courant = now->prev;
 		}
-		else /* on a inscrit le dernier code dans le buffer */
+		else // on a inscrit le dernier code dans le buffer 
 		{
-			/* caractère de fin */
+			// caractère de fin 
 			strcat(buffer_transmis, '&');
 			break;
 		}
-	}while (now->prev != NULL)
+	}while (courant != NULL)
 
-	/* on attend une minute */
+	// on attend une minute 
 	sleep(60);
 
-	/* send_to_all envoit à tout le monde sauf à lui même... */
+	// send_to_all envoit à tout le monde sauf à lui même... 
 	send_to_all_clients(now, buffer_transmis);
-	send(now, buffer_transmis);
+	send(now, buffer_transmis, strlen(buffer_transmis), 0);
 }
-
 
 int main(int argc, char * argv[])
 {
