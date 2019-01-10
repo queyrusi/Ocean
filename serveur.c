@@ -480,7 +480,7 @@ int main(int argc, char * argv[])
         }
 
         pthread_t transmission_map;
-        if (pthread_create(&transmission_map, NULL, (void * )modif_vent, (void *)c) != 0) 
+        if (pthread_create(&transmission_map, NULL, (void * )transmettre_map, (void *)c) != 0) 
         {
             perror("Pthread erreur!\n");
             exit(EXIT_FAILURE);
