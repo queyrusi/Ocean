@@ -215,6 +215,16 @@ char* nom_bateau (char* message_entrant_buffer){
     nom_bat[4] = message_entrant_buffer[4];
 	return nom_bat;
 }
+/**
+ * fonction init_position
+ * ====================
+ *
+ *Permet de renvoyer la position initiale du bateau (celle envoyée dans le buffer)
+ *
+ * Paramètres
+ * ----------
+ * char message_entrant_buffer : le message qu'envoie le client
+ */
 
 char* init_position (char* message_entrant_buffer){
     char * position;
@@ -231,7 +241,16 @@ char* init_position (char* message_entrant_buffer){
 	position[8] = message_entrant_buffer[13];
 	return position;
 }
-
+/**
+ * fonction init_direction
+ * ====================
+ *
+ *Permet de renvoyer la direction initiale du bateau (celle envoyée dans le buffer)
+ *
+ * Paramètres
+ * ----------
+ * char message_entrant_buffer : le message qu'envoie le client
+ */
 char* init_direction (char* message_entrant_buffer){
     char * direction;
     direction = malloc(sizeof(char)*100);

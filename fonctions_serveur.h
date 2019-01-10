@@ -42,10 +42,10 @@ void caracteriser_navire(Bateau * navire, char * buffer);
 int est_bateau (char* message_entrant_buffer);
 
 /**
- * fonction est_bateau
+ * fonction nom_bateau
  * ====================
  *
- * premet de verifier qu'on a bien un code bateau
+ *Permet de renvoyer le nom du bateau
  *
  * Paramètres
  * ----------
@@ -54,6 +54,31 @@ int est_bateau (char* message_entrant_buffer);
 
 char* nom_bateau (char* message_entrant_buffer);
 
+/**
+ * fonction init_position
+ * ====================
+ *
+ *Permet de renvoyer la position initiale du bateau (celle envoyée dans le buffer)
+ *
+ * Paramètres
+ * ----------
+ * char message_entrant_buffer : le message qu'envoie le client
+ */
+
+char* init_position (char* message_entrant_buffer);
+
+/**
+ * fonction init_direction
+ * ====================
+ *
+ *Permet de renvoyer la direction initiale du bateau (celle envoyée dans le buffer)
+ *
+ * Paramètres
+ * ----------
+ * char message_entrant_buffer : le message qu'envoie le client
+ */
+
+char* init_direction (char* message_entrant_buffer);
 /**
  * fonction inscrire_navire
  * ========================
