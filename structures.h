@@ -9,7 +9,7 @@ typedef struct ClientNode { // structure du client
     char position[10]; // obsolète
     /* A ajouter au fur et a mesure pour les bateaux*/
     int vitesse;
-    char direction[2];
+    char direction;
     int x;
     int y;
 } ClientList;
