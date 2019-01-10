@@ -18,6 +18,7 @@ void print_msg(char *talker, char * chat);
  * 
  */
 
+
 void quitter_sock(int sig);
 
 /**
