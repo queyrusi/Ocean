@@ -5,75 +5,43 @@
 #ifndef LIST
 #define LIST
 
-typedef struct ClientNode { // structure du client
-    int data;// code bateau
-    struct ClientNode* prev;
-    struct ClientNode* link;
-    char ip[16];
-    char name[31];
-    char position[10]; // obsolète
-    /* A ajouter au fur et a mesure pour les bateaux*/
+/**
+ * fonction print_msg 
+ * ------------------
+ * 
+ */
+void print_msg(char *talker, char * chat);
 
-    //int identifiant;
-    //int * pidentifiant;
-    /*beaucoup plus pratique pour l'envoi du buffer initial */
-    //char vitesse[2];  
-    /* ajout de la même vitesse en int pour les "vraies" 
-    manipulations */
-    int vitesse;
-    char direction[2];
-    //char position[10];
-    int x;
-    int y;
-} ClientList;
-
-ClientList *newNode(int sockfd, char* ip) { //creation d'un espace pour un potentiel client
-    ClientList *np = (ClientList *)malloc( sizeof(ClientList) );
-    np->data = sockfd; //code bateau
-    np->prev = NULL;
-    np->link = NULL;
-    strncpy(np->ip, ip, 16);
-    strncpy(np->name, "NULL", 5);
-    return np;
-}
+/**
+ * fonction quitter_sock
+ * ------------------
+ * 
+ */
 
 
-char * substr(char *chaineSource,int pos,int len) { 
-  // Retourne la sous-chaine de la chaine chaineSource 
-  // depuis la position pos sur la longueur len
- 
-  char * dest=NULL;                        
-  if (len>0) {                  
-    /* allocation et mise à zéro */          
-    dest = (char *)calloc(len+1, 1);      
-    /* vérification de la réussite de l'allocation*/  
-    if(NULL != dest) {
-        strncat(dest,chaineSource+pos,len);            
-    }
-  }                                       
-  return dest;                            
-}
- 
-char * mid(char *chaineSource, int pos) {
-      // Retourne la sous-chaine de chaineSource depuis 
-      // la postion pos jusqu'au reste de chaineSource.
-      // Si la position pos est supperieur à la longueur de chaineSource, 
-      // on retourne chaineSource.
-      return (pos>strlen(chaineSource))? chaineSource : substr(chaineSource, pos, strlen(chaineSource));
-}
- 
-char * left(char *chaineSource, int len){
-      // Retourne les len caractères de gauche de chaineSource.
-      // Si la longueur len est suppérieur ou égale à la longeur de chaineSource,
-      // on retourne chaineSource. Si len est 0, on retourne '\0'. 
-      return (len>=strlen(chaineSource))? chaineSource : substr(chaineSource, 0, len);
-}
- 
-char * right(char *chaineSource, int len){
-      // Retourne les len caractères de droite de chaineSource.
-      // Si la longueur len est suppérieur ou égale à la longueur de chaineSource,
-      // on retourne chaineSource. Si len est 0, on retourne '\0'.
-      return (len>=strlen(chaineSource))? chaineSource : substr(chaineSource, strlen(chaineSource)-len, len);
-}
+void quitter_sock(int sig);
+
+/**
+ * fonction send_to_all_clients pour le chat et l'envoi de l'ocean toutes les minutes
+ * ------------------
+ * 
+ */
+void send_to_all_clients(ClientList *Client_courant, char tmp_buffer[]);
+
+
+/**
+ * fonction gestion_vent pour changer la direction et la force du vent
+ * ------------------
+ * 
+ */
+void modif_vent();
+
+
+/**
+ * fonction client_handler pour gerer l'ensemble des connections qui rentrent dans le système
+ * 
+ */
+
+void client_handler(void *p_client);
 
 #endif 

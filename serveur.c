@@ -8,10 +8,16 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <errno.h>
+#include <netdb.h>
+#include <ctype.h>
+
+
 #include "structures.h"
 #include "fonctions_serveur.c"
 #include "serveur.h"
 #include "donnees.h"
+#include "string.h"
 
 // Global variables
 int ssocket = 0;
@@ -33,7 +39,6 @@ void print_msg(char *talker, char * chat)
 	fflush(stdout);
 }
 
-char *position = "192N_023E";  // obsolète
 /**
  * fonction quitter_sock
  * ------------------
@@ -42,7 +47,7 @@ char *position = "192N_023E";  // obsolète
 
 void quitter_sock(int sig) {// On cherche ici a fermer toutes les sockets lorsqu'on va shutdown le systeme
     ClientList *tmp;
-    while (root != NULL) {// Tant qu'on a pas fermer la racine on continue
+    while (root != NULL) {// Tant qu'on a pas fermer la racine on continue, erreur de compilation lorsqu'on ferme le serveur, à corriger
         printf("\nFermeture Socket: %d\n", root->data);
         close(root->data); // On ferme la socket sur laquelle on se situe puis on remonte les liens
         tmp = root;
@@ -79,6 +84,7 @@ void modif_vent(){
     choix_vent[0] = 0; // on initialise le vent à 0
     char message_console[LENGTH_MSG] = {};
     while(1){
+    char direction[3];
 		if (fgets(message_console, 32, stdin) != NULL && strcmp(left(message_console, 4),"vent") ==0 ) {
 	                choix_vent[0]= message_console[4];
 	                choix_vent[1]= message_console[5];
@@ -128,6 +134,7 @@ void client_handler(void *p_client) { //gestionnaire de client, permet au serveu
         free(position);
         free(direction);
         printf("Le bateau %s(%s)(%d) a rejoint l'ocean à la position %s en direction %s.\n", Client_courant->name, Client_courant->ip, Client_courant->data, Client_courant->position,Client_courant->direction);
+        bzero(send_buffer,sizeof(send_buffer));
         sprintf(send_buffer, "Le bateau%s(%s) a rejoint l'ocean à la position %s en direction %s", Client_courant->name, Client_courant->ip, Client_courant->position, Client_courant->direction);// On met dans le buffer et on envoi a tout le monde que le nouveau bateau a rejoint l'ocean
         send_to_all_clients(Client_courant, send_buffer); // on envoi à tout le monde que un client vient de rejoindre la salle
     }
@@ -142,7 +149,7 @@ void client_handler(void *p_client) { //gestionnaire de client, permet au serveu
         int receive = recv(Client_courant->data, recv_buffer, LENGTH_MSG, 0);
         if (receive > 0) {
 	    if (strcmp(recv_buffer, "P") == 0 ){
-	    	printf(" Le bateau %s(%s)(%d) a demandé sa position'.\n", Client_courant->name, Client_courant->ip, Client_courant->data);
+	    	printf("Le bateau %s(%s)(%d) a demandé sa position'.\n", Client_courant->name, Client_courant->ip, Client_courant->data);
 			/* on copie la position dans le buffer et on l'envoit */
 			sprintf(send_buffer, "%s, vous êtes à la position %s", Client_courant->name, Client_courant->position);
 			//strncpy(buffer, position, 11);
@@ -176,8 +183,9 @@ void client_handler(void *p_client) { //gestionnaire de client, permet au serveu
         Client_courant->prev->link = Client_courant->link;
         Client_courant->link->prev = Client_courant->prev;
     }
-    free(Client_courant);
+    //free(Client_courant);
 }
+
 
 int main(int argc, char * argv[])
 {
