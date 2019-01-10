@@ -11,7 +11,7 @@ typedef struct ClientNode { // structure du client
     struct ClientNode* link;
     char ip[16];
     char name[31];
-    char position[10];
+    char position[10]; // obsolète
     /* A ajouter au fur et a mesure pour les bateaux*/
 
     //int identifiant;
@@ -20,11 +20,11 @@ typedef struct ClientNode { // structure du client
     //char vitesse[2];  
     /* ajout de la même vitesse en int pour les "vraies" 
     manipulations */
-    //int vitesse_int;
-    char direction[3];
+    int vitesse;
+    char direction[2];
     //char position[10];
-    //int x;
-    //int y;
+    int x;
+    int y;
 } ClientList;
 
 ClientList *newNode(int sockfd, char* ip) { //creation d'un espace pour un potentiel client
